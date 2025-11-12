@@ -2,10 +2,49 @@ const express = require("express"); // moduli base
 const cors = require('cors') // gestione api
 const { Pool } = require('pg') 
 
+//costant for bcrypt
+const bcrypt = require("bcrypt");
+
 const app = express(); // creiamo l'app
 app.use(cors());
 app.use(express.json()); // per leggere i json dal body
 
+
+//authentication login and register
+
+const users = [];
+
+app.get("/users", (req, res) => {
+  res.json(users)
+});
+
+app.post("/users", async (req, res) => {
+  try {
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    const user = { username: req.body.username, password: hashedPassword };
+    users.push(user);
+    res.status(201).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send();
+  }
+});
+
+// login
+app.post("/users/login", async (req, res) =>{
+  const user = users.find(user => user.username = req.body.username)
+  if (user == null){
+    return res.status(404).send("cannot find user")
+  }
+    try {
+      bcrypt.compare(req.body.password, user.password);
+      res.send("success");
+    } catch (error) {
+      res.status(500).send();
+      
+    }
+  });
 
 // configurazione del database
 const pool = new Pool({
